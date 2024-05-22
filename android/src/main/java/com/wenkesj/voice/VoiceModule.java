@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.speech.RecognitionListener;
@@ -28,6 +29,7 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.modules.core.PermissionAwareActivity;
 import com.facebook.react.modules.core.PermissionListener;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -40,6 +42,7 @@ public class VoiceModule extends ReactContextBaseJavaModule implements Recogniti
   private SpeechRecognizer speech = null;
   private boolean isRecognizing = false;
   private String locale = null;
+  private MediaRecorder recorder = null;  // New for audio recording
 
   public VoiceModule(ReactApplicationContext reactContext) {
     super(reactContext);
@@ -54,7 +57,9 @@ public class VoiceModule extends ReactContextBaseJavaModule implements Recogniti
     return Locale.getDefault().toString();
   }
 
-  private void startListening(ReadableMap opts) {
+  private void startListening(ReadableMap opts, String outputUri) throws IOException {
+    Log.d("startListening", "Output URI: " + outputUri); // Print outputUri in the device console
+
     if (speech != null) {
       speech.destroy();
       speech = null;
@@ -74,6 +79,18 @@ public class VoiceModule extends ReactContextBaseJavaModule implements Recogniti
     }
 
     speech.setRecognitionListener(this);
+
+    try {
+      Log.d("ASR", "Output URI: " + outputUri); // Print outputUri in the device console
+      recorder = new MediaRecorder();
+      recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+      recorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS);  // AAC for .m4a
+      recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+      recorder.setOutputFile(outputUri);
+    } catch (Exception e) {
+      Log.d("ASR", "ERROR RECORDING"); // Print outputUri in the device console
+      e.printStackTrace();
+    }
 
     final Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
 
@@ -124,9 +141,18 @@ public class VoiceModule extends ReactContextBaseJavaModule implements Recogniti
 
     intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, getLocale(this.locale));
     speech.startListening(intent);
+
+    try {
+      recorder.prepare();
+      recorder.start();  //
+      } catch (Exception e) {
+      Log.d("ASR", "ERROR RECORDING.."); // Print outputUri in the device console
+      e.printStackTrace();
+    }
+
   }
 
-  private void startSpeechWithPermissions(final String locale, final ReadableMap opts, final Callback callback) {
+  private void startSpeechWithPermissions(final String locale, final ReadableMap opts, final String outputUri, final Callback callback) {
     this.locale = locale;
 
     Handler mainHandler = new Handler(this.reactContext.getMainLooper());
@@ -134,7 +160,7 @@ public class VoiceModule extends ReactContextBaseJavaModule implements Recogniti
       @Override
       public void run() {
         try {
-          startListening(opts);
+          startListening(opts, outputUri);
           isRecognizing = true;
           callback.invoke(false);
         } catch (Exception e) {
@@ -150,7 +176,9 @@ public class VoiceModule extends ReactContextBaseJavaModule implements Recogniti
   }
 
   @ReactMethod
-  public void startSpeech(final String locale, final ReadableMap opts, final Callback callback) {
+  public void startSpeech(final String locale, final ReadableMap opts, final String outputUri, final Callback callback) {
+    Log.d("startSpeech", "Output URI: " + outputUri); // Print outputUri in the device console
+    
     if (!isPermissionGranted() && opts.getBoolean("REQUEST_PERMISSIONS_AUTO")) {
       String[] PERMISSIONS = {Manifest.permission.RECORD_AUDIO};
       if (this.getCurrentActivity() != null) {
@@ -163,18 +191,30 @@ public class VoiceModule extends ReactContextBaseJavaModule implements Recogniti
               final boolean granted = grantResults[i] == PackageManager.PERMISSION_GRANTED;
               permissionsGranted = permissionsGranted && granted;
             }
-            startSpeechWithPermissions(locale, opts, callback);
+            startSpeechWithPermissions(locale, opts, outputUri, callback);
             return permissionsGranted;
           }
         });
       }
       return;
     }
-    startSpeechWithPermissions(locale, opts, callback);
+    startSpeechWithPermissions(locale, opts, outputUri, callback);
   }
 
   @ReactMethod
   public void stopSpeech(final Callback callback) {
+    try {
+      if (recorder != null) {
+        recorder.stop();
+        recorder.release();
+        recorder = null;
+      }
+    } catch (Exception e) {
+      // Handle the exception here
+      Log.d("ASR", "ERROR STOP RECORDING"); // Print outputUri in the device console
+      e.printStackTrace();
+    }
+
     Handler mainHandler = new Handler(this.reactContext.getMainLooper());
     mainHandler.post(new Runnable() {
       @Override
@@ -194,6 +234,16 @@ public class VoiceModule extends ReactContextBaseJavaModule implements Recogniti
 
   @ReactMethod
   public void cancelSpeech(final Callback callback) {
+    try {
+      if (recorder != null) {
+        recorder.stop();
+        recorder.release();
+        recorder = null;
+      }
+    } catch (Exception e) {
+      Log.d("ASR", "ERROR STOP RECORDING"); // Print outputUri in the device console
+      e.printStackTrace();
+    }
     Handler mainHandler = new Handler(this.reactContext.getMainLooper());
     mainHandler.post(new Runnable() {
       @Override
@@ -271,6 +321,20 @@ public class VoiceModule extends ReactContextBaseJavaModule implements Recogniti
     callback.invoke(isRecognizing);
   }
 
+  @ReactMethod
+  public void stopRecording() {
+    try {
+      if (recorder != null) {
+        recorder.stop();
+        recorder.release();
+        recorder = null;
+      }
+    } catch (Exception e) {
+      Log.d("ASR", "ERROR STOP RECORDING"); // Print outputUri in the device console
+      e.printStackTrace();
+    }
+  }
+
   private void sendEvent(String eventName, @Nullable WritableMap params) {
     this.reactContext
       .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
@@ -295,6 +359,17 @@ public class VoiceModule extends ReactContextBaseJavaModule implements Recogniti
 
   @Override
   public void onEndOfSpeech() {
+    try {
+      if (recorder != null) {
+        recorder.stop();
+        recorder.release();
+        recorder = null;
+      }
+    } catch (Exception e) {
+      Log.d("ASR", "ERROR STOP RECORDING"); // Print outputUri in the device console
+      e.printStackTrace();
+    }
+
     WritableMap event = Arguments.createMap();
     event.putBoolean("error", false);
     sendEvent("onSpeechEnd", event);
@@ -304,6 +379,18 @@ public class VoiceModule extends ReactContextBaseJavaModule implements Recogniti
 
   @Override
   public void onError(int errorCode) {
+    try {
+      if (recorder != null) {
+        recorder.stop();
+        recorder.release();
+        recorder = null;
+      }
+    } catch (Exception e) {
+      Log.d("ASR", "ERROR STOP RECORDING"); // Print outputUri in the device console
+      e.printStackTrace();
+
+    }
+
     String errorMessage = String.format("%d/%s", errorCode, getErrorText(errorCode));
     WritableMap error = Arguments.createMap();
     error.putString("message", errorMessage);
