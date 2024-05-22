@@ -2,6 +2,7 @@ apply plugin: 'com.android.library'
 
 repositories {
     mavenLocal()
+    google()
     jcenter()
     maven {
         // For developing the library outside the context of the example app, expect `react-native`
@@ -40,10 +41,11 @@ android {
 buildscript {
     if (project == rootProject) {
         repositories {
+            google()
             jcenter()
         }
         dependencies {
-            classpath 'com.android.tools.build:gradle:3.3.2'
+            classpath 'com.android.tools.build:gradle:7.0.4'
 
             // NOTE: Do not place your application dependencies here; they belong
             // in the individual module build.gradle files

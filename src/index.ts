@@ -71,7 +71,7 @@ class RCTVoice {
           reject(new Error(error));
         } else {
           if (this._listeners) {
-            this._listeners.map(listener => listener.remove());
+            this._listeners.map((listener) => listener.remove());
             this._listeners = null;
           }
           resolve();
@@ -89,7 +89,7 @@ class RCTVoice {
           reject(new Error(error));
         } else {
           if (this._listeners) {
-            this._listeners.map(listener => listener.remove());
+            this._listeners.map((listener) => listener.remove());
             this._listeners = null;
           }
           resolve();
@@ -98,7 +98,7 @@ class RCTVoice {
     });
   }
 
-  start(locale: any, options = {}) {
+  start(locale: any, options = {}, outputUri: string) {
     if (!this._loaded && !this._listeners && voiceEmitter !== null) {
       this._listeners = (Object.keys(this._events) as SpeechEvent[]).map(
         (key: SpeechEvent) => voiceEmitter.addListener(key, this._events[key]),
@@ -125,14 +125,15 @@ class RCTVoice {
             },
             options,
           ),
+          outputUri,
           callback,
         );
       } else {
-        Voice.startSpeech(locale, callback);
+        Voice.startSpeech(locale, outputUri, callback);
       }
     });
   }
-  startTranscription(url: any, locale: any, options = {}) {
+  startTranscription(url: any, locale: any, options = {}, outputUri: string) {
     if (!this._loaded && !this._listeners && voiceEmitter !== null) {
       this._listeners = (Object.keys(this._events) as TranscriptionEvent[]).map(
         (key: TranscriptionEvent) =>
@@ -161,10 +162,11 @@ class RCTVoice {
             },
             options,
           ),
+          outputUri,
           callback,
         );
       } else {
-        Voice.startTranscription(url, locale, callback);
+        Voice.startTranscription(url, locale, outputUri, callback);
       }
     });
   }
@@ -173,7 +175,7 @@ class RCTVoice {
       return Promise.resolve();
     }
     return new Promise((resolve, reject) => {
-      Voice.stopSpeech(error => {
+      Voice.stopSpeech((error) => {
         if (error) {
           reject(new Error(error));
         } else {
@@ -187,7 +189,7 @@ class RCTVoice {
       return Promise.resolve();
     }
     return new Promise<void>((resolve, reject) => {
-      Voice.stopTranscription(error => {
+      Voice.stopTranscription((error) => {
         if (error) {
           reject(new Error(error));
         } else {
@@ -201,7 +203,7 @@ class RCTVoice {
       return Promise.resolve();
     }
     return new Promise((resolve, reject) => {
-      Voice.cancelSpeech(error => {
+      Voice.cancelSpeech((error) => {
         if (error) {
           reject(new Error(error));
         } else {
@@ -215,7 +217,7 @@ class RCTVoice {
       return Promise.resolve();
     }
     return new Promise<void>((resolve, reject) => {
-      Voice.cancelSpeech(error => {
+      Voice.cancelSpeech((error) => {
         if (error) {
           reject(new Error(error));
         } else {
@@ -252,7 +254,7 @@ class RCTVoice {
   }
 
   isRecognizing(): Promise<0 | 1> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       Voice.isRecognizing((isRecognizing: 0 | 1) => resolve(isRecognizing));
     });
   }
