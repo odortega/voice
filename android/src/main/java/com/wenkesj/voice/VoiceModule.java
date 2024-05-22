@@ -29,6 +29,7 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.modules.core.PermissionAwareActivity;
 import com.facebook.react.modules.core.PermissionListener;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -82,11 +83,22 @@ public class VoiceModule extends ReactContextBaseJavaModule implements Recogniti
 
     try {
       Log.d("ASR", "Output URI: " + outputUri); // Print outputUri in the device console
+      // Define the file path
+      String directoryPath = getReactApplicationContext().getCacheDir().getAbsolutePath() + "/Audio";
+      File directory = new File(directoryPath);
+
+      // Create the directory if it does not exist
+      if (!directory.exists()) {
+          directory.mkdirs();
+      }
+
+      String filePath = directoryPath + "/record.m4a";
       recorder = new MediaRecorder();
       recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
       recorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS);  // AAC for .m4a
       recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-      recorder.setOutputFile(outputUri);
+      recorder.setOutputFile(filePath);
+      Log.d("ASR", "Output File: " + filePath); // Print outputUri in the device console
     } catch (Exception e) {
       Log.d("ASR", "ERROR RECORDING"); // Print outputUri in the device console
       e.printStackTrace();

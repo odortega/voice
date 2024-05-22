@@ -1,7 +1,7 @@
 {
   "name": "react-native-voice-knowz",
   "description": "A fork of react-native-voice library",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Oscar Ortega <odortega@gmail.com>",
   "private": false,
   "homepage": "https://github.com/odortega/voice",
